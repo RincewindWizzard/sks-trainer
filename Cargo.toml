@@ -7,3 +7,14 @@ edition = "2021"
 serde = { version = "1.0.214", features = ["derive"] }
 serde_json = "1.0.132"
 rustyline = "14.0.0"
+anyhow = "1.0.93"
+colored = "2.1.0"
+directories = "5.0.1"
+log = "0.4.22"
+confy = "0.6.1"
+rusqlite = "0.32.1"
+thiserror = "1.0.69"
+stderrlog = "0.6.0"
+clap = { version = "4.5.20", features = ["derive"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+crossterm = "0.28.1"
