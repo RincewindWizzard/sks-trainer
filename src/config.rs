@@ -66,8 +66,8 @@ fn project_dirs() -> Option<directories::ProjectDirs> {
 
 /// In production mode create project data in the correct paths
 #[cfg(not(debug_assertions))]
-fn project_dirs() -> Option<ProjectDirs> {
-    let project_dirs = ProjectDirs::from(
+fn project_dirs() -> Option<directories::ProjectDirs> {
+    let project_dirs = directories::ProjectDirs::from(
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_HOMEPAGE"),
         env!("CARGO_PKG_NAME"))?;
