@@ -10,6 +10,14 @@ pub struct QuestionId {
     pub topic: String,
 }
 
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Progress {
+    pub topic: String,
+    pub nominator: u64,
+    pub denominator: u64,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Question {
     pub id: u64,
@@ -39,6 +47,20 @@ impl QuestionId {
             id,
             topic: topic.to_string(),
         }
+    }
+}
+
+impl Progress {
+    pub(crate) fn new(topic: String, nominator: u64, denominator: u64) -> Progress {
+        Progress {
+            topic,
+            nominator,
+            denominator,
+        }
+    }
+
+    pub fn percentage(&self) -> f64 {
+        (100.0 * (self.nominator) as f64) / (self.denominator) as f64
     }
 }
 

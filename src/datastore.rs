@@ -7,7 +7,7 @@ use rusqlite::{Connection, Params, params, Row};
 use stderrlog::Timestamp;
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStoreError::FileSystem;
-use crate::model::{Answer, QuestionId, QuestionAnswers};
+use crate::model::{Answer, QuestionId, QuestionAnswers, Progress};
 use crate::model::Question;
 
 
@@ -45,6 +45,7 @@ pub trait DataStore {
     fn view_candidates(&mut self, skip: usize, count: usize) -> anyhow::Result<Vec<QuestionId>>;
 
     fn view_question_answers(&mut self, question_id: &QuestionId) -> anyhow::Result<QuestionAnswers>;
+    fn view_progress(&mut self) -> anyhow::Result<Vec<Progress>>;
 }
 
 impl DataStore for Connection {
@@ -211,6 +212,29 @@ impl DataStore for Connection {
                     QuestionId::new(
                         row.get("question_id")?,
                         &topic,
+                    )
+                )
+            },
+        )?;
+        Ok(questions)
+    }
+
+    fn view_progress(&mut self) -> anyhow::Result<Vec<Progress>> {
+        let questions = self.view_query(
+            "SELECT topic, SUM(CASE WHEN correct_count > 0 THEN 1 ELSE 0 END) as correct, COUNT(question_id) as alle FROM statistics GROUP BY topic;",
+            params![],
+            |row| {
+                let topic: String = row.get("topic")?;
+                let correct: u64 = row.get("correct")?;
+                let alle: u64 = row.get("alle").unwrap();
+
+
+
+                Ok(
+                    Progress::new(
+                        topic,
+                        correct,
+                        alle,
                     )
                 )
             },

@@ -72,6 +72,39 @@ fn ask(mut connection: &mut Connection, question_answers: &QuestionAnswers) -> a
     Ok(())
 }
 
+fn progressbar(value: usize, max: usize) -> String {
+    format!("[{}{}]", "=".repeat(value), " ".repeat(max - value))
+}
+
+fn show_progresses(con: &mut Connection) -> Result<(), Box<dyn std::error::Error>> {
+    let _ = execute!(stdout(), Clear(ClearType::All ), cursor::MoveTo(0, 0));
+
+    println!("{}", Stylize::bold("Auswertung").green());
+    let progresses = con.view_progress()?;
+    const PROGRESSBAR_WIDTH: usize = 40;
+
+    let topic_col_width = progresses.iter().map(|x| x.topic.len()).max().unwrap_or(0);
+
+    let width = topic_col_width * PROGRESSBAR_WIDTH;
+
+    println!("{}", "-".repeat(topic_col_width));
+
+    for progress in progresses {
+        let progressbar = progressbar((PROGRESSBAR_WIDTH * progress.nominator as usize) / (progress.denominator as usize), PROGRESSBAR_WIDTH);
+
+        let topic = format!("{}{}", progress.topic, " ".repeat(topic_col_width - progress.topic.len()));
+        println!(
+            "{} {} {:3} / {:3} = {:5.2} %",
+            topic,
+            progressbar,
+            progress.nominator,
+            progress.denominator,
+            progress.percentage(),
+        )
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     setup_logging(&args).expect("Failed to setup logging!");
@@ -88,9 +121,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match ask(&mut con, &question) {
             Ok(_) => {}
             Err(_) => {
+                show_progresses(&mut con)?;
                 return Ok(());
             }
         }
     }
+
     Ok(())
 }
