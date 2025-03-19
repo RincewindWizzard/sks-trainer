@@ -18,7 +18,7 @@ use crossterm::style::Stylize;
 use crossterm::terminal::{Clear, ClearType};
 use rusqlite::Connection;
 use crate::datastore::DataStore;
-use crate::model::{Question, QuestionAnswers, QuestionId};
+use crate::model::{Progress, Question, QuestionAnswers, QuestionId};
 
 const YES: &str = "y";
 const NO: &str = "n";
@@ -89,21 +89,34 @@ fn show_progresses(con: &mut Connection) -> Result<(), Box<dyn std::error::Error
 
     println!("{}", "-".repeat(topic_col_width));
 
-    for progress in progresses {
-        let progressbar = progressbar((PROGRESSBAR_WIDTH * progress.nominator as usize) / (progress.denominator as usize), PROGRESSBAR_WIDTH);
-
-        let topic = format!("{}{}", progress.topic, " ".repeat(topic_col_width - progress.topic.len()));
-        println!(
-            "{} {} {:3} / {:3} = {:5.2} %",
-            topic,
-            progressbar,
-            progress.nominator,
-            progress.denominator,
-            progress.percentage(),
-        )
+    for progress in &progresses {
+        println!("{}", format_progress(progress, topic_col_width, PROGRESSBAR_WIDTH));
     }
+    // Gesamt Auswertung
+    let row = format_progress(&Progress::new(
+        "Gesamt".to_string(),
+        progresses.iter().map(|x| x.nominator).sum(),
+        progresses.iter().map(|x| x.denominator).sum(),
+    ), topic_col_width, PROGRESSBAR_WIDTH);
+    println!("{}\n{}", "-".repeat(row.len()), row.bold());
+
     Ok(())
 }
+
+fn format_progress(progress: &Progress, topic_col_width: usize, progressbar_width: usize) -> String {
+    let progressbar = progressbar((progressbar_width * progress.nominator as usize) / (progress.denominator as usize), progressbar_width);
+
+    let topic = format!("{}{}", progress.topic, " ".repeat(topic_col_width - progress.topic.len()));
+    format!(
+        "{} {} {:3} / {:3} = {:5.2} %",
+        topic,
+        progressbar,
+        progress.nominator,
+        progress.denominator,
+        progress.percentage(),
+    )
+}
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
