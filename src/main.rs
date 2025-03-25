@@ -76,6 +76,24 @@ fn progressbar(value: usize, max: usize) -> String {
     format!("[{}{}]", "=".repeat(value), " ".repeat(max - value))
 }
 
+fn show_daily_progress(con: &mut Connection) -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n\n# {}\n", Stylize::bold("Täglicher Fortschritt"));
+
+    println!("{:<10} {:>7} {:>6} {:>9}",  "Datum", Stylize::green("richtig"), Stylize::red("falsch"), "insgesamt");
+    println!("-----------------------------------");
+    let daily_progresses = con.view_progress_per_day()?;
+    for daily_progress in daily_progresses {
+        println!(
+            "{} {} {} {}",
+            daily_progress.date,
+            format!("{:>7}", daily_progress.correct_count).green(),
+            format!("{:>6}", daily_progress.false_count).red(),
+            format!("{:>9}", daily_progress.full_amount()),
+        );
+    }
+    Ok(())
+}
+
 fn show_progresses(con: &mut Connection) -> Result<(), Box<dyn std::error::Error>> {
     let _ = execute!(stdout(), Clear(ClearType::All ), cursor::MoveTo(0, 0));
 
@@ -135,6 +153,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(_) => {}
             Err(_) => {
                 show_progresses(&mut con)?;
+                show_daily_progress(&mut con)?;
                 return Ok(());
             }
         }

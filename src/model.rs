@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{Date, DateTime, NaiveDate, Utc};
 use log::debug;
 use serde::{Deserialize, Serialize};
 use stderrlog::Timestamp;
@@ -16,6 +16,13 @@ pub struct Progress {
     pub topic: String,
     pub nominator: u64,
     pub denominator: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DailyProgress {
+    pub date: NaiveDate,
+    pub false_count: u64,
+    pub correct_count: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -47,6 +54,20 @@ impl QuestionId {
             id,
             topic: topic.to_string(),
         }
+    }
+}
+
+impl DailyProgress {
+    pub(crate) fn new(date: NaiveDate, correct_count: u64, false_count: u64) -> DailyProgress {
+        DailyProgress {
+            date,
+            correct_count,
+            false_count,
+        }
+    }
+
+    pub fn full_amount(&self) -> u64 {
+        self.false_count + self.correct_count
     }
 }
 

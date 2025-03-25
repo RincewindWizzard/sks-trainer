@@ -1,13 +1,14 @@
 use std::cmp::max;
-use anyhow::Context;
-use chrono::{DateTime, Utc};
+use anyhow::{anyhow, Context};
+use chrono::{DateTime, NaiveDate, Utc};
 use log::debug;
 use thiserror::Error;
 use rusqlite::{Connection, Params, params, Row};
+use rusqlite::types::Type;
 use stderrlog::Timestamp;
 use crate::config::ApplicationConfig;
 use crate::datastore::DataStoreError::FileSystem;
-use crate::model::{Answer, QuestionId, QuestionAnswers, Progress};
+use crate::model::{Answer, QuestionId, QuestionAnswers, Progress, DailyProgress};
 use crate::model::Question;
 
 
@@ -46,6 +47,7 @@ pub trait DataStore {
 
     fn view_question_answers(&mut self, question_id: &QuestionId) -> anyhow::Result<QuestionAnswers>;
     fn view_progress(&mut self) -> anyhow::Result<Vec<Progress>>;
+    fn view_progress_per_day(&mut self) -> anyhow::Result<Vec<DailyProgress>>;
 }
 
 impl DataStore for Connection {
@@ -226,9 +228,7 @@ impl DataStore for Connection {
             |row| {
                 let topic: String = row.get("topic")?;
                 let correct: u64 = row.get("correct")?;
-                let alle: u64 = row.get("alle").unwrap();
-
-
+                let alle: u64 = row.get("alle")?;
 
                 Ok(
                     Progress::new(
@@ -240,5 +240,26 @@ impl DataStore for Connection {
             },
         )?;
         Ok(questions)
+    }
+
+    fn view_progress_per_day(&mut self) -> anyhow::Result<Vec<DailyProgress>> {
+        let daily_progresses = self.view_query(
+            "select date(timestamp) as day, SUM(correct = 0) as false_count, SUM(correct = 1) as correct_count from answers group by date(timestamp) ORDER BY timestamp ASC;",
+            params![],
+            |row| {
+                let day: NaiveDate = NaiveDate::parse_from_str(&row.get::<_, String>("day")?, "%Y-%m-%d").unwrap();
+                let false_count: u64 = row.get("false_count")?;
+                let correct_count: u64 = row.get("correct_count")?;
+
+                Ok(
+                    DailyProgress::new(
+                        day,
+                        correct_count,
+                        false_count,
+                    )
+                )
+            },
+        )?;
+        Ok(daily_progresses)
     }
 }
